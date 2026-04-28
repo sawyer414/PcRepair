@@ -45,7 +45,7 @@
             <p><strong>Email:</strong> <a href="mailto:hello@benchsidepc.com">hello@benchsidepc.com</a></p>
             <p><strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:30 PM</p>
           </div>
-          <form class="card form" action="mailto:hello@benchsidepc.com" method="post" enctype="text/plain">
+          <form id="contact-form" class="card form">
             <label for="name">Name</label>
             <input id="name" name="name" required />
 
@@ -56,7 +56,38 @@
             <textarea id="message" name="message" rows="5" required></textarea>
 
             <button class="button" type="submit">Send</button>
+            <p id="form-status" aria-live="polite"></p>
           </form>
+
+          <script type="module">
+            import { supabase, CONTACT_TABLE } from "./supabase.js";
+
+            const form = document.getElementById("contact-form");
+            const status = document.getElementById("form-status");
+
+            form.addEventListener("submit", async (e) => {
+              e.preventDefault();
+              status.textContent = "";
+
+              const name = form.name.value.trim();
+              const email = form.email.value.trim();
+              const message = form.message.value.trim();
+
+              const { error } = await supabase
+                .from(CONTACT_TABLE)
+                .insert([{ name, email, message }]);
+
+              if (error) {
+                console.error("Contact form submission error:", error);
+                status.textContent =
+                  "Something went wrong. Please try again or email us directly.";
+              } else {
+                status.textContent =
+                  "Message sent! We'll be in touch soon.";
+                form.reset();
+              }
+            });
+          </script>
         </div>
       </section>
     </main>
