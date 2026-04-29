@@ -183,10 +183,46 @@ p {
   background: rgba(3, 8, 14, 0.9);
 }
 
+.builds-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.build-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.build-card__photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.build-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.build-card__body {
+  padding: 1.2rem;
+}
+
+.build-card__body h3 {
+  margin-bottom: 0.4rem;
+}
+
 @media (max-width: 900px) {
   .hero__grid,
   .grid-2,
   .grid-3,
+  .builds-grid,
   .topbar__inner,
   .footer__inner {
     grid-template-columns: 1fr;
