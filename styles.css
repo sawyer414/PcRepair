@@ -183,6 +183,34 @@ p {
   background: rgba(3, 8, 14, 0.9);
 }
 
+.review-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.review-stars {
+  color: #f5c518;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+}
+
+.review-body {
+  margin: 0;
+  flex: 1;
+}
+
+.review-body p {
+  margin: 0;
+  font-style: italic;
+}
+
+.review-author {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .builds-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
