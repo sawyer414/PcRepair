@@ -73,10 +73,11 @@
               const name = form.name.value.trim();
               const email = form.email.value.trim();
               const message = form.message.value.trim();
+              const created_at = new Date().toISOString();
 
               const { error } = await supabase
                 .from(CONTACT_TABLE)
-                .insert([{ name, email, message }]);
+                .insert([{ name, email, message, created_at }]);
 
               if (error) {
                 console.error("Contact form submission error:", error);
@@ -101,4 +102,3 @@
     </footer>
   </body>
 </html>
-
