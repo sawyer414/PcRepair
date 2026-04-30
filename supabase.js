@@ -8,4 +8,4 @@ const SUPABASE_ANON_KEY =
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-export const CONTACT_TABLE = "contact_submissions";
+export const CONTACT_TABLE = "ticket";
