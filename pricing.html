@@ -7,58 +7,101 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <h1>PcRepair Pricing</h1>
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="about.html">About</a>
-            <a href="builds.html">Builds</a>
-            <a href="contact.html">Contact</a>
-            <a href="pricing.html">Pricing</a>
-        </nav>
+    <header class="topbar">
+        <div class="container topbar__inner">
+            <a class="brand" href="./index.html">
+                <span class="brand__badge">PC</span>
+                <span>
+                    <strong>Benchside PC Repair & Custom Builds</strong>
+                    <small>Repair • Upgrades • Custom Builds</small>
+                </span>
+            </a>
+            <nav class="nav" id="primary-nav" aria-label="Primary navigation">
+                <a href="./index.html">Home</a>
+                <a href="./about.html">About</a>
+                <a href="./builds.html">Builds</a>
+                <a href="./contact.html">Contact</a>
+                <a href="./pricing.html" aria-current="page">Pricing</a>
+            </nav>
+            <button class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primary-nav">
+                <span class="nav-toggle__bar"></span>
+                <span class="nav-toggle__bar"></span>
+                <span class="nav-toggle__bar"></span>
+            </button>
+        </div>
     </header>
     <main>
-        <section>
-            <h2>Our Services & Pricing</h2>
-            <table class="pricing-table">
-                <thead>
-                    <tr>
-                        <th>Service</th>
-                        <th>Price</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Virus & Malware Removal</td>
-                        <td>TBD</td>
-                    </tr>
-                    <tr>
-                        <td>Hardware Diagnostics</td>
-                        <td>TBD</td>
-                    </tr>
-                    <tr>
-                        <td>Custom PC Builds</td>
-                        <td>TBD</td>
-                    </tr>
-                    <tr>
-                        <td>Data Recovery</td>
-                        <td>TBD</td>
-                    </tr>
-                    <tr>
-                        <td>Operating System Installation</td>
-                        <td>TBD</td>
-                    </tr>
-                    <tr>
-                        <td>General Troubleshooting</td>
-                        <td>TBD</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p>Contact us for a custom quote or more information about our services.</p>
+        <section class="hero">
+            <div class="container">
+                <p class="eyebrow">Pricing</p>
+                <h1>Service Pricing</h1>
+                <p>Transparent, practical pricing for PC repair, upgrades, and custom builds. Contact us for a custom quote or more information about our services.</p>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container">
+                <h2>Our Services & Pricing</h2>
+                <div class="card">
+                    <table class="pricing-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Virus & Malware Removal</td>
+                                <td>TBD</td>
+                            </tr>
+                            <tr>
+                                <td>Hardware Diagnostics</td>
+                                <td>TBD</td>
+                            </tr>
+                            <tr>
+                                <td>Custom PC Builds</td>
+                                <td>TBD</td>
+                            </tr>
+                            <tr>
+                                <td>Data Recovery</td>
+                                <td>TBD</td>
+                            </tr>
+                            <tr>
+                                <td>Operating System Installation</td>
+                                <td>TBD</td>
+                            </tr>
+                            <tr>
+                                <td>General Troubleshooting</td>
+                                <td>TBD</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
     </main>
-    <footer>
-        <p>&copy; 2026 PcRepair. All rights reserved.</p>
+    <footer class="footer">
+        <div class="container footer__inner">
+            <p><strong>Benchside PC Repair & Custom Builds</strong></p>
+            <p>© 2026 Benchside PC Repair & Custom Builds</p>
+        </div>
     </footer>
+    <script>
+        var toggle = document.querySelector('.nav-toggle');
+        var nav = document.getElementById('primary-nav');
+        toggle.addEventListener('click', function () {
+            var expanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', String(!expanded));
+            this.setAttribute('aria-label', expanded ? 'Open navigation menu' : 'Close navigation menu');
+            nav.classList.toggle('is-open', !expanded);
+        });
+        nav.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Open navigation menu');
+                nav.classList.remove('is-open');
+            });
+        });
+    </script>
 </body>
 </html>
