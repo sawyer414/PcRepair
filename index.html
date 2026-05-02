@@ -120,5 +120,20 @@
         <p>© 2026 Benchside PC Repair & Custom Builds</p>
       </div>
     </footer>
+    <script>
+      const navToggle = document.querySelector('.nav-toggle');
+      const nav = document.getElementById('primary-nav');
+      navToggle.addEventListener('click', () => {
+        const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', !expanded);
+        nav.classList.toggle('is-open');
+      });
+      nav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          nav.classList.remove('is-open');
+          navToggle.setAttribute('aria-expanded', false);
+        });
+      });
+    </script>
   </body>
 </html>
