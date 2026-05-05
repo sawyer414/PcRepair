@@ -337,13 +337,16 @@ p {
   }
 
   /* Scale down Google Form on mobile */
-  iframe {
-    width: 100% !important;
-    height: auto !important;
-    max-width: 100%;
-    transform: scale(0.85);
-    transform-origin: top left;
-    margin-bottom: 2rem;
+  .form-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .form-container iframe {
+    zoom: 0.75;
+    width: 640px;
+    height: 690px;
   }
 }
 
