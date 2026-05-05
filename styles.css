@@ -355,18 +355,15 @@ p {
   .form-container {
     width: 100%;
     max-width: 320px;
-    height: 690px;
-    overflow: hidden;
     margin: 0 auto;
   }
 
   .form-container iframe {
-    width: 640px;
-    height: 1380px;
+    width: 320px;
+    height: 690px;
     display: block;
     margin: 0 auto;
-    transform: scale(0.5);
-    transform-origin: top left;
+    transform: none;
   }
 }
 
