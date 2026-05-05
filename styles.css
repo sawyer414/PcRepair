@@ -298,6 +298,18 @@ p {
   transform: translateY(-7px) rotate(-45deg);
 }
 
+/* ── Google Form ──────────────────────────────────────────────── */
+.form-container {
+  width: 100%;
+}
+
+.form-container iframe {
+  width: 640px;
+  height: 690px;
+  display: block;
+  margin: 0 auto;
+}
+
 /* ── Mobile nav dropdown ──────────────────────────────────────── */
 @media (max-width: 640px) {
   .nav-toggle {
@@ -336,19 +348,17 @@ p {
     border-bottom: none;
   }
 
-  /* Scale down Google Form on mobile */
+  /* Mobile Google Form */
   .form-container {
     width: 100%;
     overflow: hidden;
   }
 
   .form-container iframe {
-    transform: scale(0.6);
-    transform-origin: top center;
-    width: 640px;
+    width: 320px;
     height: 690px;
-    margin: 0 auto;
     display: block;
+    margin: 0 auto;
   }
 }
 
