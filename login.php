@@ -33,7 +33,7 @@
         $password = $_POST['password'];
 
         // Database connection
-        $host = 'localhost'; // Adjust as needed
+        $host = '54.225.154.64'; // Adjust as needed
         $db = PcRepair'; // Replace with your database name
         $user = 'Sawyer'; // Replace with your DB username
         $pass = '/Royals2026'; // Replace with your DB password
