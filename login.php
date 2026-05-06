@@ -53,10 +53,10 @@
                 header('Location: admin.php');
                 exit;
             } else {
-                echo '<script>document.getElementById("login-status").textContent = "Invalid username or password.";</script>';
+                echo '';
             }
         } catch (PDOException $e) {
-            echo '<script>document.getElementById("login-status").textContent = "Database error. Please try again.";</script>';
+            echo '';
         }
     }
     ?>
