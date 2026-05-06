@@ -29,7 +29,7 @@
 session_start();
 
 try {
-    $pdo = new PDO("mysql:host=localhost;dbname=your_db", "user", "pass");
+    $pdo = new PDO("mysql:host=54.225.154.64;dbname=PcRepair", "Sawyer", "/Royals2026");
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $username = $_POST['username'] ?? '';
