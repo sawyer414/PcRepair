@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+    <?php
+    session_start();
+
+    if (!isset($_SESSION['admin_id'])) {
+        header('Location: login.php');
+        exit;
+    }
+    ?>
     <header class="topbar">
         <div class="container topbar__inner">
             <a class="brand" href="./index.html">
@@ -63,13 +71,6 @@
     </main>
 
     <?php
-    session_start();
-
-    if (!isset($_SESSION['admin_id'])) {
-        header('Location: login.php');
-        exit;
-    }
-
     // Admin content here
     echo '<p>Logged in as: ' . htmlspecialchars($_SESSION['admin_username']) . '</p>';
     ?>
