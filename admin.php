@@ -27,7 +27,37 @@
             <div class="container">
                 <h1>Welcome to Admin Panel</h1>
                 <p>Manage your site here.</p>
-                <!-- Add admin functionality here -->
+                <h2>Admins List</h2>
+                <table class="card">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        // Database connection
+                        $host = '54.225.154.64';
+                        $db = 'PcRepair';
+                        $user = 'Sawyer';
+                        $pass = '/Royals2026';
+
+                        try {
+                            $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
+                            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                            $stmt = $pdo->query("SELECT ID, Username, Email FROM Admins");
+                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                echo "<tr><td>{$row['ID']}</td><td>{$row['Username']}</td><td>{$row['Email']}</td></tr>";
+                            }
+                        } catch (PDOException $e) {
+                            echo "<tr><td colspan='3'>Error loading admins.</td></tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
             </div>
         </section>
     </main>

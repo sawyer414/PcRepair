@@ -25,40 +25,34 @@
         </section>
     </main>
 
-    <?php
-    session_start();
+<?php
+session_start();
 
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
+try {
+    $pdo = new PDO("mysql:host=localhost;dbname=your_db", "user", "pass");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        // Database connection
-        $host = '54.225.154.64'; // Adjust as needed
-        $db = 'PcRepair'; // Replace with your database name
-        $user = 'Sawyer'; // Replace with your DB username
-        $pass = '/Royals2026'; // Replace with your DB password
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
 
-        try {
-            $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $stmt = $pdo->prepare("SELECT ID, Username, Email, Password FROM Admins WHERE Username = ?");
+    $stmt->execute([$username]);
 
-            // Query the Admins table
-            $stmt = $pdo->prepare("SELECT ID, Username, Email, Password FROM Admins WHERE Username = ?");
-            $stmt->execute([$username]);
-            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($admin && password_verify($password, $admin['Password'])) {
-                $_SESSION['admin_id'] = $admin['ID'];
-                $_SESSION['admin_username'] = $admin['Username'];
-                header('Location: admin.php');
-                exit;
-            } else {
-                echo '';
-            }
-        } catch (PDOException $e) {
-            echo '';
-        }
+    if ($admin && password_verify($password, $admin['Password'])) {
+        $_SESSION['admin_id'] = $admin['ID'];
+        $_SESSION['admin_username'] = $admin['Username'];
+
+        header('Location: admin.php');
+        exit;
+    } else {
+        echo "Invalid login.";
     }
-    ?>
+
+} catch (PDOException $e) {
+    echo "Server error.";
+}
+?>
 </body>
 </html>
