@@ -1,30 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
-    <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-    <main>
-        <section class="hero">
-            <div class="container">
-                <h1>Admin Login</h1>
-                <form action="login.php" method="post" class="card form">
-                    <label for="username">Username</label>
-                    <input id="username" name="username" required />
-
-                    <label for="password">Password</label>
-                    <input id="password" name="password" type="password" required />
-
-                    <button class="button" type="submit">Login</button>
-                    <p id="login-status" aria-live="polite"></p>
-                </form>
-            </div>
-        </section>
-    </main>
-
 <?php
 session_start();
 
@@ -54,5 +27,33 @@ try {
     echo "Server error.";
 }
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Admin Login</h1>
+                <form action="login.php" method="post" class="card form">
+                    <label for="username">Username</label>
+                    <input id="username" name="username" required />
+
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" required />
+
+                    <button class="button" type="submit">Login</button>
+                    <p id="login-status" aria-live="polite"></p>
+                </form>
+            </div>
+        </section>
+    </main>
+
 </body>
 </html>
