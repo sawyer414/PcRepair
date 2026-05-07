@@ -1,0 +1,82 @@
+# .htaccess - Basic Security Configuration
+# Bench Side Repair
+
+# HTTPS Enforcement
+<IfModule mod_rewrite.c>
+    #RewriteEngine On
+    # Redirect all HTTP to HTTPS
+    #RewriteCond %{HTTPS} off
+    #RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking attacks
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Enable XSS protection
+    Header set X-XSS-Protection "1; mode=block"
+
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Permissions Policy
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Content Security Policy
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';"
+</IfModule>
+
+# File Access Protection
+# Protect sensitive files
+<FilesMatch "\.(bat|txt|md|json|scss)$">
+    Require all denied
+</FilesMatch>
+
+# Protect package.json and notes
+<Files "package.json">
+    Require all denied
+</Files>
+
+# Protect .htaccess itself
+<Files ".htaccess">
+    Require all denied
+</Files>
+
+# Block access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Directory Listing Protection
+Options -Indexes
+
+# Server Signature
+ServerSignature Off
+
+# Disable ETags
+FileETag None
+
+# Protect against injection attacks in URLs
+<IfModule mod_rewrite.c>
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2})
+    RewriteRule ^(.*)$ index.html [F,L]
+
+
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.*)$ $1.html [L]
+
+    RewriteCond %{THE_REQUEST} \.html[\s?] [NC]
+    RewriteRule ^(.*)\.html$ /$1 [R=301,L]
+
+    # Redirect /index or /index.html to /
+    RewriteRule ^index(\.html)?$ / [R=301,L]
+</IfModule>
