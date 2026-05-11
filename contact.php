@@ -54,12 +54,8 @@
             <p><strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:30 PM</p>
           </div>
 
-          <div class="form-container">
-            <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScJXsQtueRmX7H2QITjCrviUw_Tri12zDSRfjS6zgi51nP3Qw/viewform?embedded=true" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
-          </div>
 
-
-        <!-- <form id="contact-form" class="card form">
+        <form id="contact-form" class="card form">
             <label for="name">Name</label>
             <input id="name" name="name" required />
 
@@ -71,7 +67,7 @@
 
             <button class="button" type="submit">Send</button>
             <p id="form-status" aria-live="polite"></p>
-          </form> -->
+          </form>
 
 
 
