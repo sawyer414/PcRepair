@@ -1,33 +1,40 @@
 # .htaccess - Basic Security Configuration
-# Bench Side Repair
-
-# HTTPS Enforcement
-<IfModule mod_rewrite.c>
-    #RewriteEngine On
-    # Redirect all HTTP to HTTPS
-    #RewriteCond %{HTTPS} off
-    #RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-</IfModule>
+# HTTPS redirect is handled at the server level in 000-default.conf
 
 # Security Headers
-<IfModule mod_headers.c>
-    # Prevent clickjacking attacks
-    Header set X-Frame-Options "SAMEORIGIN"
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-    # Enable XSS protection
-    Header set X-XSS-Protection "1; mode=block"
+    # === Security: Block common attacks ===
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2})
+    RewriteRule ^(.*)$ index.html [F,L]
 
-    # Prevent MIME type sniffing
-    Header set X-Content-Type-Options "nosniff"
+    # === Extensionless URLs (Clean + Safe) ===
+    
+    # 1. Internally rewrite clean URL to .php (if the .php file exists)
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L]
 
-    # Referrer Policy
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    # 2. Internally rewrite clean URL to .html (if the .html file exists)
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.*)$ $1.html [L]
 
-    # Permissions Policy
-    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # 3. Remove .php from browser URL (only if directly requested)
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\s/(.+)\.php[\s?] [NC]
+    RewriteRule ^(.+)\.php$ /$1 [R=301,L,QSA]
 
-    # Content Security Policy
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';"
+    # 4. Remove .html from browser URL
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\s/(.+)\.html[\s?] [NC]
+    RewriteRule ^(.+)\.html$ /$1 [R=301,L,QSA]
+
+    # Redirect /index and /index.* to root
+    RewriteRule ^index(\.html|\.php)?$ / [R=301,L]
 </IfModule>
 
 # File Access Protection
@@ -60,22 +67,33 @@ ServerSignature Off
 # Disable ETags
 FileETag None
 
-# Protect against injection attacks in URLs
+# URL rewriting, injection protection, and clean URLs
 <IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block script injection via query strings
     RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
     RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
     RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2})
     RewriteRule ^(.*)$ index.html [F,L]
 
+    # Serve PHP files without the extension (checked first)
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L]
 
-    RewriteEngine On
-
+    # Serve HTML files without the extension
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME}.html -f
     RewriteRule ^(.*)$ $1.html [L]
 
+    # Remove .html extension from URLs
     RewriteCond %{THE_REQUEST} \.html[\s?] [NC]
     RewriteRule ^(.*)\.html$ /$1 [R=301,L]
+
+    # Remove .php extension from URLs
+    RewriteCond %{THE_REQUEST} \.php[\s?] [NC]
+    RewriteRule ^(.*)\.php$ /$1 [R=301,L]
 
     # Redirect /index or /index.html to /
     RewriteRule ^index(\.html)?$ / [R=301,L]
