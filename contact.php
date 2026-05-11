@@ -1,3 +1,49 @@
+<?php
+// ── Database config ──────────────────────────────────────────────
+$host   = "54.225.154.64";       // your DB host
+$dbname = "PcRepair";   // your database name
+$user   = "Sawyer";   // your DB username
+$pass   = "/Royals2026";   // your DB password
+// ────────────────────────────────────────────────────────────────
+ 
+$success = null;
+$error   = null;
+ 
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $name    = trim($_POST["name"]    ?? "");
+    $email   = trim($_POST["email"]   ?? "");
+    $message = trim($_POST["message"] ?? "");
+ 
+    if (!$name || !$email || !$message) {
+        $error = "All fields are required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email address.";
+    } else {
+        try {
+            $pdo = new PDO(
+                "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+                $user,
+                $pass,
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+            );
+ 
+            $stmt = $pdo->prepare(
+                "INSERT INTO contacts (name, email, message, created_at)
+                 VALUES (:name, :email, :message, NOW())"
+            );
+            $stmt->execute([
+                ":name"    => $name,
+                ":email"   => $email,
+                ":message" => $message,
+            ]);
+ 
+            $success = "Message sent! We'll be in touch soon.";
+        } catch (PDOException $e) {
+            $error = "Something went wrong. Please try again or email us directly.";
+        }
+    }
+}
+?>
 <!doctype html>
 <html lang="en">
   <head>
@@ -15,7 +61,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
-        <link rel="icon" type="png/image" href="./favicon.png" />
+    <link rel="icon" type="png/image" href="./favicon.png" />
   </head>
   <body>
     <header class="topbar">
@@ -31,7 +77,7 @@
           <a href="./index.html">Home</a>
           <a href="./about.html">About</a>
           <a href="./builds.html">Builds</a>
-          <a href="./contact.html" aria-current="page">Contact</a>
+          <a href="./contact.php" aria-current="page">Contact</a>
           <a href="./pricing.html">Pricing</a>
         </nav>
         <button class="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primary-nav">
@@ -41,7 +87,7 @@
         </button>
       </div>
     </header>
-
+ 
     <main>
       <section class="hero">
         <div class="container grid-2">
@@ -53,64 +99,38 @@
             <p><strong>Email:</strong> <a href="mailto:benchsiderepair@gmail.com">benchsiderepair@gmail.com</a></p>
             <p><strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:30 PM</p>
           </div>
-
-
-        <form id="contact-form" class="card form">
+ 
+          <form id="contact-form" class="card form" method="POST" action="./contact.php">
             <label for="name">Name</label>
-            <input id="name" name="name" required />
-
+            <input id="name" name="name" required value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>" />
+ 
             <label for="email">Email</label>
-            <input id="email" name="email" type="email" required />
-
+            <input id="email" name="email" type="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" />
+ 
             <label for="message">Message</label>
-            <textarea id="message" name="message" rows="5" required></textarea>
-
+            <textarea id="message" name="message" rows="5" required><?php echo htmlspecialchars($_POST['message'] ?? ''); ?></textarea>
+ 
             <button class="button" type="submit">Send</button>
-            <p id="form-status" aria-live="polite"></p>
+ 
+            <?php if ($success): ?>
+              <p id="form-status" aria-live="polite" style="color: green;"><?php echo $success; ?></p>
+            <?php elseif ($error): ?>
+              <p id="form-status" aria-live="polite" style="color: red;"><?php echo $error; ?></p>
+            <?php else: ?>
+              <p id="form-status" aria-live="polite"></p>
+            <?php endif; ?>
           </form>
-
-
-
-          <script type="module">
-            import { supabase, CONTACT_TABLE } from "./supabase.js";
-
-            const form = document.getElementById("contact-form");
-            const status = document.getElementById("form-status");
-
-            form.addEventListener("submit", async (e) => {
-              e.preventDefault();
-              status.textContent = "";
-
-              const name = form.name.value.trim();
-              const email = form.email.value.trim();
-              const message = form.message.value.trim();
-              const created_at = new Date().toISOString();
-
-              const { error } = await supabase
-                .from(CONTACT_TABLE)
-                .insert([{ name, email, message, created_at }]);
-
-              if (error) {
-                console.error("Contact form submission error:", error);
-                status.textContent =
-                  "Something went wrong. Please try again or email us directly.";
-              } else {
-                status.textContent =
-                  "Message sent! We'll be in touch soon.";
-                form.reset();
-              }
-            });
-          </script>
         </div>
       </section>
     </main>
-
+ 
     <footer class="footer">
       <div class="container footer__inner">
         <p><strong>Benchside PC Repair & Custom Builds</strong></p>
         <p>Benchside PC Repair & Custom Builds</p>
       </div>
     </footer>
+ 
     <script>
       const navToggle = document.querySelector('.nav-toggle');
       const nav = document.getElementById('primary-nav');
