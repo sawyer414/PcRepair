@@ -60,7 +60,7 @@
           _-->
 
 
-        <!-- <form id="contact-form" class="card form">
+        <form id="contact-form" class="card form">
             <label for="name">Name</label>
             <input id="name" name="name" required />
 
@@ -72,7 +72,7 @@
 
             <button class="button" type="submit">Send</button>
             <p id="form-status" aria-live="polite"></p>
-          </form> -->
+          </form>
 
 
 
