@@ -95,9 +95,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <p class="eyebrow">Contact</p>
             <h1>Tell us what your PC needs.</h1>
             <p>Call, email, or send a message and I will help you plan the next step.</p>
-            <p><strong>Phone:</strong> <a href="tel:+16804449304">(680) 444-9304</a></p>
+            <p><strong>Phone:</strong> <a href="tel:+16804449304">(315) 577-3663</a></p>
             <p><strong>Email:</strong> <a href="mailto:benchsiderepair@gmail.com">benchsiderepair@gmail.com</a></p>
-            <p><strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:30 PM</p>
+            <p><strong>Hours:</strong> Thur-Sat, 6:00 PM - 9:00 PM</p>
           </div>
  
           <form id="contact-form" class="card form" method="POST" action="./contact.php">
