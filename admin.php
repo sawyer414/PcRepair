@@ -10,6 +10,19 @@
     <?php
     session_start();
 
+    // Database connection
+    $host = '54.225.154.64';
+    $db = 'PcRepair';
+    $user = 'Sawyer';
+    $pass = '/Royals2026';
+
+    try {
+        $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch (PDOException $e) {
+        die('Database connection failed: ' . $e->getMessage());
+    }
+
     // Allow AJAX table fetch to receive JSON error instead of HTML redirect
     $is_fetch_ajax = (isset($_GET['action']) && $_GET['action'] === 'fetch_table');
     if (!isset($_SESSION['admin_id'])) {
@@ -21,24 +34,121 @@
         header('Location: login.php');
         exit;
     }
-    ?>
-    <?php
-        // Handle delete admin
-        if ($action === 'delete_admin' && !empty($_POST['admin_id'])) {
-            $aid = (int)$_POST['admin_id'];
-            // prevent deleting self
-            if ($aid === (int)$_SESSION['admin_id']) {
-                $msg = 'Cannot delete currently logged-in admin.';
+
+    // Initialize variables
+    $action = $_POST['action'] ?? $_GET['action'] ?? '';
+    $msg = '';
+    $allowed_ext = ['html', 'php'];
+
+    // Handle add_admin
+    if ($action === 'add_admin' && !empty($_POST['username'])) {
+        $username = $_POST['username'];
+        $email = $_POST['email'];
+        $password = $_POST['password'];
+        try {
+            $hashed_pwd = password_hash($password, PASSWORD_BCRYPT);
+            $st = $pdo->prepare('INSERT INTO Admins (Username, Email, Password) VALUES (?, ?, ?)');
+            $st->execute([$username, $email, $hashed_pwd]);
+            $msg = 'Admin added successfully.';
+        } catch (PDOException $e) {
+            $msg = 'Error adding admin: ' . $e->getMessage();
+        }
+    }
+
+    // Handle update_admin
+    if ($action === 'update_admin' && !empty($_POST['admin_id'])) {
+        $admin_id = (int)$_POST['admin_id'];
+        $username = $_POST['username'];
+        $email = $_POST['email'];
+        try {
+            if (!empty($_POST['password'])) {
+                $hashed_pwd = password_hash($_POST['password'], PASSWORD_BCRYPT);
+                $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ?, Password = ? WHERE ID = ?');
+                $st->execute([$username, $email, $hashed_pwd, $admin_id]);
             } else {
-                try {
-                    $st = $pdo->prepare('DELETE FROM Admins WHERE ID = ?');
-                    $st->execute([$aid]);
-                    $msg = 'Admin removed.';
-                } catch (PDOException $e) {
-                    $msg = 'Failed to remove admin.';
+                $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ? WHERE ID = ?');
+                $st->execute([$username, $email, $admin_id]);
+            }
+            $msg = 'Admin updated successfully.';
+        } catch (PDOException $e) {
+            $msg = 'Error updating admin: ' . $e->getMessage();
+        }
+    }
+
+    // Handle delete_admin
+    if ($action === 'delete_admin' && !empty($_POST['admin_id'])) {
+        $aid = (int)$_POST['admin_id'];
+        if ($aid === (int)$_SESSION['admin_id']) {
+            $msg = 'Cannot delete currently logged-in admin.';
+        } else {
+            try {
+                $st = $pdo->prepare('DELETE FROM Admins WHERE ID = ?');
+                $st->execute([$aid]);
+                $msg = 'Admin removed.';
+            } catch (PDOException $e) {
+                $msg = 'Failed to remove admin.';
+            }
+        }
+    }
+
+    // Handle create_page
+    if ($action === 'create_page' && !empty($_POST['filename'])) {
+        $filename = $_POST['filename'];
+        $content = $_POST['content'] ?? '';
+        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+        if (in_array(strtolower($ext), $allowed_ext)) {
+            $filepath = __DIR__ . DIRECTORY_SEPARATOR . $filename;
+            if (!file_exists($filepath)) {
+                file_put_contents($filepath, $content);
+                $msg = 'Page created: ' . htmlspecialchars($filename);
+            } else {
+                $msg = 'File already exists.';
+            }
+        } else {
+            $msg = 'Invalid file extension. Allowed: ' . implode(', ', $allowed_ext);
+        }
+    }
+
+    // Handle delete_pages
+    if ($action === 'delete_pages' && !empty($_POST['delete_files'])) {
+        $deleted = 0;
+        foreach ($_POST['delete_files'] as $f) {
+            $ext = pathinfo($f, PATHINFO_EXTENSION);
+            if (in_array(strtolower($ext), $allowed_ext)) {
+                $filepath = __DIR__ . DIRECTORY_SEPARATOR . $f;
+                if (file_exists($filepath) && is_file($filepath)) {
+                    unlink($filepath);
+                    $deleted++;
                 }
             }
         }
+        $msg = "Deleted $deleted file(s).";
+    }
+
+    // Handle fetch_table (AJAX)
+    if ($action === 'fetch_table') {
+        header('Content-Type: application/json');
+        $table = $_GET['table'] ?? '';
+        if (empty($table)) {
+            echo json_encode(['error' => 'No table specified']);
+            exit;
+        }
+        try {
+            $stmt = $pdo->query("DESCRIBE " . $table);
+            $columns = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $columns[] = $row['Field'];
+            }
+            
+            $stmt = $pdo->query("SELECT * FROM " . $table);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode(['columns' => $columns, 'rows' => $rows]);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        exit;
+    }
     ?>
     <header class="topbar">
         <div class="container topbar__inner">
