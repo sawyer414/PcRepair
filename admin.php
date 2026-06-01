@@ -21,136 +21,138 @@
         header('Location: login.php');
         exit;
     }
+    ?>
+                <script>
+                (function(){
+                    const select = document.getElementById('db-table-select');
+                    const view = document.getElementById('db-view');
+                    const btn = document.getElementById('refresh-now');
+                    const auto = document.getElementById('auto-refresh');
+                    const intervalInput = document.getElementById('refresh-interval');
+                    const searchInput = document.getElementById('db-search');
+                    const pageSizeSel = document.getElementById('page-size');
+                    const prevBtn = document.getElementById('prev-page');
+                    const nextBtn = document.getElementById('next-page');
+                    const pageIndicator = document.getElementById('page-indicator');
+                    const info = document.getElementById('db-info');
+                    let timer = null;
 
-    // Database connection
-    $host = '54.225.154.64';
-    $db = 'PcRepair';
-    $user = 'Sawyer';
-    $pass = '/Royals2026';
+                    // state
+                    let state = { columns: [], rows: [], filtered: [], sort: {col: null, dir: 1}, page: 1, pageSize: parseInt(pageSizeSel.value,10) };
 
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch (PDOException $e) {
-        die('Database connection failed.');
-    }
+                    function escapeHtml(s){ return s.replace(/[&<>\"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
-    // Helper: allowed file extensions for page management
-    $allowed_ext = ['html', 'htm', 'php'];
+                    function applyFilterSort() {
+                        const q = (searchInput.value || '').toLowerCase();
+                        state.filtered = state.rows.filter(r => {
+                            if (!q) return true;
+                            for (const c of state.columns) {
+                                const v = (r[c] ?? '') + '';
+                                if (v.toLowerCase().indexOf(q) !== -1) return true;
+                            }
+                            return false;
+                        });
 
-    // Helper: validate filename (no paths, simple chars)
-    function valid_filename($name) {
-        return preg_match('/^[A-Za-z0-9_\-]+\.(html|htm|php)$/', $name);
-    }
-
-    // Handle AJAX fetch of table contents (returns JSON)
-    if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'fetch_table') {
-        $table = $_GET['table'] ?? '';
-        // allow only simple table names
-        if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Invalid table name']);
-            exit;
-        }
-
-        try {
-            // get allowed tables
-            $allowed = [];
-            $res = $pdo->query('SHOW TABLES');
-            while ($r = $res->fetch(PDO::FETCH_NUM)) {
-                $allowed[] = $r[0];
-            }
-
-            if (!in_array($table, $allowed, true)) {
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Table not allowed']);
-                exit;
-            }
-
-            $stmt = $pdo->query('SELECT * FROM `' . $table . '` LIMIT 200');
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            header('Content-Type: application/json');
-            echo json_encode(['columns' => array_keys($rows[0] ?? []), 'rows' => $rows]);
-            exit;
-        } catch (PDOException $e) {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Query failed']);
-            exit;
-        }
-    }
-
-    // Handle create page
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-        $action = $_POST['action'];
-
-        if ($action === 'create_page') {
-            $fname = trim($_POST['filename'] ?? '');
-            $content = $_POST['content'] ?? '';
-            if (!valid_filename($fname)) {
-                $msg = 'Invalid filename.';
-            } else {
-                $path = __DIR__ . DIRECTORY_SEPARATOR . $fname;
-                if (file_exists($path)) {
-                    $msg = 'File already exists.';
-                } else {
-                    if (file_put_contents($path, $content) !== false) {
-                        $msg = 'Page created.';
-                    } else {
-                        $msg = 'Failed to create page.';
+                        if (state.sort.col) {
+                            const col = state.sort.col; const dir = state.sort.dir;
+                            state.filtered.sort((a,b)=>{
+                                const A = (a[col] ?? ''); const B = (b[col] ?? '');
+                                if (!isNaN(A) && !isNaN(B)) return (A-B)*dir; // numeric
+                                return A.toString().localeCompare(B.toString())*dir;
+                            });
+                        }
+                        state.page = 1;
                     }
-                }
-            }
-        }
 
-        // Handle delete pages (checkbox list)
-        if ($action === 'delete_pages' && !empty($_POST['delete_files'])) {
-            $deleted = 0;
-            foreach ($_POST['delete_files'] as $f) {
-                if (!valid_filename($f)) continue;
-                $path = __DIR__ . DIRECTORY_SEPARATOR . $f;
-                if (is_file($path)) {
-                    if (unlink($path)) $deleted++;
-                }
-            }
-            $msg = "Deleted $deleted file(s).";
-        }
+                    function renderTable() {
+                        const cols = state.columns;
+                        const rows = state.filtered;
+                        const pageSize = state.pageSize = parseInt(pageSizeSel.value,10)||10;
+                        const total = rows.length;
+                        const pages = Math.max(1, Math.ceil(total / pageSize));
+                        if (state.page > pages) state.page = pages;
+                        const start = (state.page-1)*pageSize;
+                        const slice = rows.slice(start, start+pageSize);
 
-        // Handle add admin (prevent duplicate emails)
-        if ($action === 'add_admin') {
-            $username = trim($_POST['username'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $password = $_POST['password'] ?? '';
-            if ($username === '' || $email === '' || $password === '') {
-                $msg = 'All admin fields required.';
-            } else {
-                // check duplicate email
-                $chk = $pdo->prepare('SELECT COUNT(*) FROM Admins WHERE Email = ?');
-                $chk->execute([$email]);
-                if ($chk->fetchColumn() > 0) {
-                    $msg = 'Email already in use.';
-                } else {
-                    $hash = password_hash($password, PASSWORD_DEFAULT);
-                    try {
-                        $st = $pdo->prepare('INSERT INTO Admins (Username, Email, Password) VALUES (?, ?, ?)');
-                        $st->execute([$username, $email, $hash]);
-                        $msg = 'Admin added.';
-                    } catch (PDOException $e) {
-                        $msg = 'Failed to add admin.';
+                        let html = '<table style="border-collapse:collapse;width:100%"><thead><tr>';
+                        html += '<th style="border:1px solid #ccc;padding:6px;background:#f6f6f6">#</th>';
+                        for (const c of cols) {
+                            const sortMark = state.sort.col === c ? (state.sort.dir>0 ? ' ▲' : ' ▼') : '';
+                            html += '<th data-col="'+escapeHtml(c)+'" style="border:1px solid #ccc;padding:6px;background:#f6f6f6;cursor:pointer">'+escapeHtml(c)+sortMark+'</th>';
+                        }
+                        html += '</tr></thead><tbody>';
+                        for (let i=0;i<slice.length;i++) {
+                            const r = slice[i];
+                            html += '<tr>' + '<td style="border:1px solid #eee;padding:6px">'+(start+i+1)+'</td>';
+                            for (const c of cols) {
+                                html += '<td style="border:1px solid #eee;padding:6px">'+escapeHtml(String(r[c] ?? ''))+'</td>';
+                            }
+                            html += '</tr>';
+                        }
+                        html += '</tbody></table>';
+                        view.innerHTML = html;
+
+                        // hook up header clicks for sorting
+                        const ths = view.querySelectorAll('th[data-col]');
+                        ths.forEach(th=>{
+                            th.addEventListener('click', ()=>{
+                                const col = th.getAttribute('data-col');
+                                if (state.sort.col === col) state.sort.dir = -state.sort.dir; else { state.sort.col = col; state.sort.dir = 1; }
+                                applyFilterSort(); renderTable();
+                            });
+                        });
+
+                        // update pagination info
+                        pageIndicator.textContent = state.page + ' / ' + pages;
+                        info.textContent = total + ' row(s)';
                     }
-                }
-            }
-        }
 
-        // Handle update admin (edit)
-        if ($action === 'update_admin' && !empty($_POST['admin_id'])) {
-            $aid = (int)$_POST['admin_id'];
-            $username = trim($_POST['username'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $password = $_POST['password'] ?? null; // optional
+                    function renderData(data) {
+                        if (data.error) { view.innerHTML = '<p style="color:red">' + escapeHtml(data.error) + '</p>'; return; }
+                        state.columns = data.columns || [];
+                        state.rows = data.rows || [];
+                        applyFilterSort();
+                        renderTable();
+                    }
 
-            if ($username === '' || $email === '') {
-                $msg = 'Username and email are required.';
-            } else {
+                    async function fetchTable() {
+                        const table = select.value;
+                        if (!table) { view.innerHTML = '<p>Select a table to view.</p>'; return; }
+                        view.innerHTML = '<p>Loading...</p>';
+                        try {
+                            const res = await fetch('?action=fetch_table&table=' + encodeURIComponent(table));
+                            const text = await res.text();
+                            let data;
+                            try {
+                                data = JSON.parse(text);
+                            } catch (err) {
+                                view.innerHTML = '<pre style="color:red">Server response:\n' + escapeHtml(text) + '</pre>';
+                                return;
+                            }
+                            if (data.error) {
+                                view.innerHTML = '<p style="color:red">' + escapeHtml(data.error) + '</p>';
+                                return;
+                            }
+                            renderData(data);
+                        } catch (e) {
+                            view.innerHTML = '<p style="color:red">Fetch error: ' + escapeHtml(e.message || String(e)) + '</p>';
+                            console.error(e);
+                        }
+                    }
+
+                    btn.addEventListener('click', fetchTable);
+                    select.addEventListener('change', fetchTable);
+                    searchInput.addEventListener('input', ()=>{ applyFilterSort(); renderTable(); });
+                    pageSizeSel.addEventListener('change', ()=>{ applyFilterSort(); renderTable(); });
+                    prevBtn.addEventListener('click', ()=>{ if (state.page>1) { state.page--; renderTable(); } });
+                    nextBtn.addEventListener('click', ()=>{ const pages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize)); if (state.page<pages) { state.page++; renderTable(); } });
+
+                    function startTimer(){ stopTimer(); const s = Math.max(1, parseInt(intervalInput.value,10)||5); timer = setInterval(fetchTable, s*1000); }
+                    function stopTimer(){ if (timer) { clearInterval(timer); timer = null; } }
+                    auto.addEventListener('change', function(){ if (auto.checked) startTimer(); else stopTimer(); });
+                    intervalInput.addEventListener('change', function(){ if (auto.checked) startTimer(); });
+                })();
+                </script>
                 // check duplicate email for other users
                 $chk = $pdo->prepare('SELECT COUNT(*) FROM Admins WHERE Email = ? AND ID <> ?');
                 $chk->execute([$email, $aid]);
