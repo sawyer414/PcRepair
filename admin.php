@@ -153,29 +153,7 @@
                     intervalInput.addEventListener('change', function(){ if (auto.checked) startTimer(); });
                 })();
                 </script>
-                <?
-                // check duplicate email for other users
-                $chk = $pdo->prepare('SELECT COUNT(*) FROM Admins WHERE Email = ? AND ID <> ?');
-                $chk->execute([$email, $aid]);
-                if ($chk->fetchColumn() > 0) {
-                    $msg = 'Email already in use by another admin.';
-                } else {
-                    try {
-                        if ($password !== null && $password !== '') {
-                            $hash = password_hash($password, PASSWORD_DEFAULT);
-                            $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ?, Password = ? WHERE ID = ?');
-                            $st->execute([$username, $email, $hash, $aid]);
-                        } else {
-                            $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ? WHERE ID = ?');
-                            $st->execute([$username, $email, $aid]);
-                        }
-                        $msg = 'Admin updated.';
-                    } catch (PDOException $e) {
-                        $msg = 'Failed to update admin.';
-                    }
-                }
-
-
+    <?php
         // Handle delete admin
         if ($action === 'delete_admin' && !empty($_POST['admin_id'])) {
             $aid = (int)$_POST['admin_id'];
