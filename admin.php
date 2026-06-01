@@ -10,7 +10,14 @@
     <?php
     session_start();
 
+    // Allow AJAX table fetch to receive JSON error instead of HTML redirect
+    $is_fetch_ajax = (isset($_GET['action']) && $_GET['action'] === 'fetch_table');
     if (!isset($_SESSION['admin_id'])) {
+        if ($is_fetch_ajax) {
+            header('Content-Type: application/json', true, 401);
+            echo json_encode(['error' => 'Not authenticated']);
+            exit;
+        }
         header('Location: login.php');
         exit;
     }
@@ -373,12 +380,26 @@
                     async function fetchTable() {
                         const table = select.value;
                         if (!table) { view.innerHTML = '<p>Select a table to view.</p>'; return; }
+                        view.innerHTML = '<p>Loading...</p>';
                         try {
                             const res = await fetch('?action=fetch_table&table=' + encodeURIComponent(table));
-                            const data = await res.json();
+                            const text = await res.text();
+                            let data;
+                            try {
+                                data = JSON.parse(text);
+                            } catch (err) {
+                                // show raw server response for debugging
+                                view.innerHTML = '<pre style="color:red">Server response:\n' + escapeHtml(text) + '</pre>';
+                                return;
+                            }
+                            if (data.error) {
+                                view.innerHTML = '<p style="color:red">' + escapeHtml(data.error) + '</p>';
+                                return;
+                            }
                             renderData(data);
                         } catch (e) {
-                            view.innerHTML = '<p style="color:red">Fetch error</p>';
+                            view.innerHTML = '<p style="color:red">Fetch error: ' + escapeHtml(e.message || String(e)) + '</p>';
+                            console.error(e);
                         }
                     }
 
