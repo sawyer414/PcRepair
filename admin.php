@@ -153,6 +153,7 @@
                     intervalInput.addEventListener('change', function(){ if (auto.checked) startTimer(); });
                 })();
                 </script>
+                <?
                 // check duplicate email for other users
                 $chk = $pdo->prepare('SELECT COUNT(*) FROM Admins WHERE Email = ? AND ID <> ?');
                 $chk->execute([$email, $aid]);
@@ -173,8 +174,7 @@
                         $msg = 'Failed to update admin.';
                     }
                 }
-            }
-        }
+
 
         // Handle delete admin
         if ($action === 'delete_admin' && !empty($_POST['admin_id'])) {
@@ -192,7 +192,6 @@
                 }
             }
         }
-    }
     ?>
     <header class="topbar">
         <div class="container topbar__inner">
