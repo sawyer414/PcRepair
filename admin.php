@@ -36,6 +36,42 @@
         return preg_match('/^[A-Za-z0-9_\-]+\.(html|htm|php)$/', $name);
     }
 
+    // Handle AJAX fetch of table contents (returns JSON)
+    if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'fetch_table') {
+        $table = $_GET['table'] ?? '';
+        // allow only simple table names
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Invalid table name']);
+            exit;
+        }
+
+        try {
+            // get allowed tables
+            $allowed = [];
+            $res = $pdo->query('SHOW TABLES');
+            while ($r = $res->fetch(PDO::FETCH_NUM)) {
+                $allowed[] = $r[0];
+            }
+
+            if (!in_array($table, $allowed, true)) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Table not allowed']);
+                exit;
+            }
+
+            $stmt = $pdo->query('SELECT * FROM `' . $table . '` LIMIT 200');
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            header('Content-Type: application/json');
+            echo json_encode(['columns' => array_keys($rows[0] ?? []), 'rows' => $rows]);
+            exit;
+        } catch (PDOException $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Query failed']);
+            exit;
+        }
+    }
+
     // Handle create page
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $action = $_POST['action'];
@@ -72,7 +108,7 @@
             $msg = "Deleted $deleted file(s).";
         }
 
-        // Handle add admin
+        // Handle add admin (prevent duplicate emails)
         if ($action === 'add_admin') {
             $username = trim($_POST['username'] ?? '');
             $email = trim($_POST['email'] ?? '');
@@ -80,13 +116,53 @@
             if ($username === '' || $email === '' || $password === '') {
                 $msg = 'All admin fields required.';
             } else {
-                $hash = password_hash($password, PASSWORD_DEFAULT);
-                try {
-                    $st = $pdo->prepare('INSERT INTO Admins (Username, Email, Password) VALUES (?, ?, ?)');
-                    $st->execute([$username, $email, $hash]);
-                    $msg = 'Admin added.';
-                } catch (PDOException $e) {
-                    $msg = 'Failed to add admin.';
+                // check duplicate email
+                $chk = $pdo->prepare('SELECT COUNT(*) FROM Admins WHERE Email = ?');
+                $chk->execute([$email]);
+                if ($chk->fetchColumn() > 0) {
+                    $msg = 'Email already in use.';
+                } else {
+                    $hash = password_hash($password, PASSWORD_DEFAULT);
+                    try {
+                        $st = $pdo->prepare('INSERT INTO Admins (Username, Email, Password) VALUES (?, ?, ?)');
+                        $st->execute([$username, $email, $hash]);
+                        $msg = 'Admin added.';
+                    } catch (PDOException $e) {
+                        $msg = 'Failed to add admin.';
+                    }
+                }
+            }
+        }
+
+        // Handle update admin (edit)
+        if ($action === 'update_admin' && !empty($_POST['admin_id'])) {
+            $aid = (int)$_POST['admin_id'];
+            $username = trim($_POST['username'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $password = $_POST['password'] ?? null; // optional
+
+            if ($username === '' || $email === '') {
+                $msg = 'Username and email are required.';
+            } else {
+                // check duplicate email for other users
+                $chk = $pdo->prepare('SELECT COUNT(*) FROM Admins WHERE Email = ? AND ID <> ?');
+                $chk->execute([$email, $aid]);
+                if ($chk->fetchColumn() > 0) {
+                    $msg = 'Email already in use by another admin.';
+                } else {
+                    try {
+                        if ($password !== null && $password !== '') {
+                            $hash = password_hash($password, PASSWORD_DEFAULT);
+                            $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ?, Password = ? WHERE ID = ?');
+                            $st->execute([$username, $email, $hash, $aid]);
+                        } else {
+                            $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ? WHERE ID = ?');
+                            $st->execute([$username, $email, $aid]);
+                        }
+                        $msg = 'Admin updated.';
+                    } catch (PDOException $e) {
+                        $msg = 'Failed to update admin.';
+                    }
                 }
             }
         }
@@ -152,8 +228,10 @@
                                 $email = htmlspecialchars($row['Email']);
                                 echo "<tr><td>$id</td><td>$usern</td><td>$email</td>";
                                 echo "<td>";
+                                // Edit link
+                                echo "<a href=\"?edit_id=$id\">Edit</a> ";
                                 if ($id !== (int)$_SESSION['admin_id']) {
-                                    echo "<form method=\"post\" style=\"display:inline\">";
+                                    echo "<form method=\"post\" style=\"display:inline;margin-left:6px\">";
                                     echo "<input type=\"hidden\" name=\"action\" value=\"delete_admin\">";
                                     echo "<input type=\"hidden\" name=\"admin_id\" value=\"$id\">";
                                     echo "<button type=\"submit\">Remove</button>";
@@ -170,6 +248,29 @@
                     </tbody>
                 </table>
 
+                <?php
+                // If editing an admin, show edit form
+                if (!empty($_GET['edit_id'])):
+                    $edit_id = (int)$_GET['edit_id'];
+                    $st = $pdo->prepare('SELECT ID, Username, Email FROM Admins WHERE ID = ?');
+                    $st->execute([$edit_id]);
+                    $editAdmin = $st->fetch(PDO::FETCH_ASSOC);
+                    if ($editAdmin):
+                ?>
+                    <h4>Edit Admin (ID <?php echo (int)$editAdmin['ID']; ?>)</h4>
+                    <form method="post" class="card">
+                        <input type="hidden" name="action" value="update_admin">
+                        <input type="hidden" name="admin_id" value="<?php echo (int)$editAdmin['ID']; ?>">
+                        <label>Username: <input name="username" value="<?php echo htmlspecialchars($editAdmin['Username']); ?>" required></label><br>
+                        <label>Email: <input name="email" type="email" value="<?php echo htmlspecialchars($editAdmin['Email']); ?>" required></label><br>
+                        <label>New Password (leave blank to keep current): <input name="password" type="password"></label><br>
+                        <button type="submit">Update Admin</button>
+                        <a href="admin.php">Cancel</a>
+                    </form>
+                <?php
+                    endif;
+                endif;
+                    ?>
                 <h4>Add Admin</h4>
                 <form method="post" class="card">
                     <input type="hidden" name="action" value="add_admin">
@@ -217,6 +318,84 @@
                     <textarea name="content" rows="10" cols="80"></textarea><br>
                     <button type="submit">Create Page</button>
                 </form>
+
+                <h3>Live DB Viewer</h3>
+                <div class="card">
+                    <label>Table: 
+                        <select id="db-table-select">
+                            <option value="">-- select --</option>
+                            <?php
+                            // populate tables
+                            try {
+                                $tbls = [];
+                                $q = $pdo->query('SHOW TABLES');
+                                while ($r = $q->fetch(PDO::FETCH_NUM)) {
+                                    $tbls[] = $r[0];
+                                }
+                                foreach ($tbls as $t) {
+                                    echo '<option value="' . htmlspecialchars($t) . '">' . htmlspecialchars($t) . '</option>';
+                                }
+                            } catch (Exception $e) {
+                                echo '<option disabled>Error loading tables</option>';
+                            }
+                            ?>
+                        </select>
+                    </label>
+                    <label style="margin-left:10px"><input type="checkbox" id="auto-refresh"> Auto-refresh</label>
+                    <label style="margin-left:10px">Interval (s): <input id="refresh-interval" type="number" value="5" min="1" style="width:60px"></label>
+                    <button id="refresh-now" type="button">Refresh</button>
+                    <div id="db-view" style="margin-top:12px;overflow:auto;max-height:400px;border:1px solid #ddd;padding:8px;background:#fff"></div>
+                </div>
+
+                <script>
+                (function(){
+                    const select = document.getElementById('db-table-select');
+                    const view = document.getElementById('db-view');
+                    const btn = document.getElementById('refresh-now');
+                    const auto = document.getElementById('auto-refresh');
+                    const intervalInput = document.getElementById('refresh-interval');
+                    let timer = null;
+
+                    function renderData(data) {
+                        if (data.error) { view.innerHTML = '<p style="color:red">' + data.error + '</p>'; return; }
+                        const cols = data.columns || [];
+                        const rows = data.rows || [];
+                        let html = '<table style="border-collapse:collapse;width:100%"><thead><tr>' + cols.map(c=>'<th style="border:1px solid #ccc;padding:6px;background:#f6f6f6">'+escapeHtml(c)+'</th>').join('') + '</tr></thead><tbody>';
+                        for (const r of rows) {
+                            html += '<tr>' + cols.map(c=>' <td style="border:1px solid #eee;padding:6px">'+escapeHtml(String(r[c] ?? ''))+'</td>').join('') + '</tr>';
+                        }
+                        html += '</tbody></table>';
+                        view.innerHTML = html;
+                    }
+
+                    function escapeHtml(s){ return s.replace(/[&<>\"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+                    async function fetchTable() {
+                        const table = select.value;
+                        if (!table) { view.innerHTML = '<p>Select a table to view.</p>'; return; }
+                        try {
+                            const res = await fetch('?action=fetch_table&table=' + encodeURIComponent(table));
+                            const data = await res.json();
+                            renderData(data);
+                        } catch (e) {
+                            view.innerHTML = '<p style="color:red">Fetch error</p>';
+                        }
+                    }
+
+                    btn.addEventListener('click', fetchTable);
+                    select.addEventListener('change', fetchTable);
+
+                    function startTimer(){
+                        stopTimer();
+                        const s = Math.max(1, parseInt(intervalInput.value,10)||5);
+                        timer = setInterval(fetchTable, s*1000);
+                    }
+                    function stopTimer(){ if (timer) { clearInterval(timer); timer = null; } }
+
+                    auto.addEventListener('change', function(){ if (auto.checked) startTimer(); else stopTimer(); });
+                    intervalInput.addEventListener('change', function(){ if (auto.checked) startTimer(); });
+                })();
+                </script>
             </div>
         </section>
     </main>
