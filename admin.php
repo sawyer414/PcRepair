@@ -322,12 +322,15 @@
                     let timer = null;
 
                     function renderData(data) {
-                        if (data.error) { view.innerHTML = '<p class="db-error">' + escapeHtml(data.error) + '</p>'; return; }
+                        if (data.error) {
+                            renderTextTable('Server Error', data.error);
+                            return;
+                        }
                         const cols = data.columns || [];
                         const rows = data.rows || [];
                         let html = '<table class="data-table"><thead><tr>' + cols.map(c => '<th>' + escapeHtml(c) + '</th>').join('') + '</tr></thead><tbody>';
                         if (rows.length === 0) {
-                            html += '<tr><td colspan="' + cols.length + '" class="empty-state">No rows found.</td></tr>';
+                            html += '<tr><td colspan="' + Math.max(cols.length, 1) + '" class="empty-state">No rows found.</td></tr>';
                         } else {
                             for (const r of rows) {
                                 html += '<tr>' + cols.map(c => '<td>' + escapeHtml(String(r[c] ?? '')) + '</td>').join('') + '</tr>';
@@ -337,12 +340,22 @@
                         view.innerHTML = html;
                     }
 
+                    function renderTextTable(header, text) {
+                        const escaped = escapeHtml(text.trim() || '(empty response)');
+                        const html = '<table class="data-table"><thead><tr><th>' + escapeHtml(header) + '</th></tr></thead>' +
+                            '<tbody><tr><td><pre style="margin:0;white-space:pre-wrap;word-break:break-word;color:#ffb3b3;background:transparent;border:none;">' + escaped + '</pre></td></tr></tbody></table>';
+                        view.innerHTML = html;
+                    }
+
                     function escapeHtml(s){ return s.replace(/[&<>\"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
                     async function fetchTable() {
                         const table = select.value;
-                        if (!table) { view.innerHTML = '<p>Select a table to view.</p>'; return; }
-                        view.innerHTML = '<p>Loading...</p>';
+                        if (!table) {
+                            renderTextTable('Info', 'Select a table to view.');
+                            return;
+                        }
+                        renderTextTable('Info', 'Loading...');
                         try {
                             const res = await fetch('?action=fetch_table&table=' + encodeURIComponent(table));
                             const text = await res.text();
@@ -350,17 +363,16 @@
                             try {
                                 data = JSON.parse(text);
                             } catch (err) {
-                                // show raw server response for debugging
-                                view.innerHTML = '<pre style="color:red">Server response:\n' + escapeHtml(text) + '</pre>';
+                                renderTextTable('Server response', text);
                                 return;
                             }
                             if (data.error) {
-                                view.innerHTML = '<p style="color:red">' + escapeHtml(data.error) + '</p>';
+                                renderTextTable('Server Error', data.error);
                                 return;
                             }
                             renderData(data);
                         } catch (e) {
-                            view.innerHTML = '<p style="color:red">Fetch error: ' + escapeHtml(e.message || String(e)) + '</p>';
+                            renderTextTable('Fetch error', e.message || String(e));
                             console.error(e);
                         }
                     }
