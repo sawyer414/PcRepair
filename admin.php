@@ -127,25 +127,52 @@
 
     // Handle fetch_table (AJAX)
     if ($action === 'fetch_table') {
-        header('Content-Type: application/json');
+        header('Content-Type: text/html; charset=utf-8');
         $table = $_GET['table'] ?? '';
         if (empty($table)) {
-            echo json_encode(['error' => 'No table specified']);
+            echo '<table class="data-table"><thead><tr><th>Server response</th></tr></thead><tbody><tr><td>No table specified.</td></tr></tbody></table>';
             exit;
         }
         try {
-            $stmt = $pdo->query("DESCRIBE " . $table);
+            $allowedTables = [];
+            $stmt = $pdo->query('SHOW TABLES');
+            while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+                $allowedTables[] = $row[0];
+            }
+            if (!in_array($table, $allowedTables, true)) {
+                echo '<table class="data-table"><thead><tr><th>Server response</th></tr></thead><tbody><tr><td>Invalid table selected.</td></tr></tbody></table>';
+                exit;
+            }
+
+            $quotedTable = '`' . str_replace('`', '``', $table) . '`';
+            $stmt = $pdo->query("DESCRIBE $quotedTable");
             $columns = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $columns[] = $row['Field'];
             }
-            
-            $stmt = $pdo->query("SELECT * FROM " . $table);
+
+            $stmt = $pdo->query("SELECT * FROM $quotedTable");
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            echo json_encode(['columns' => $columns, 'rows' => $rows]);
+
+            echo '<table class="data-table"><thead><tr>';
+            foreach ($columns as $col) {
+                echo '<th>' . htmlspecialchars($col) . '</th>';
+            }
+            echo '</tr></thead><tbody>';
+            if (count($rows) === 0) {
+                echo '<tr><td colspan="' . max(count($columns), 1) . '" class="empty-state">No rows found.</td></tr>';
+            } else {
+                foreach ($rows as $row) {
+                    echo '<tr>';
+                    foreach ($columns as $col) {
+                        echo '<td>' . htmlspecialchars((string)($row[$col] ?? '')) . '</td>';
+                    }
+                    echo '</tr>';
+                }
+            }
+            echo '</tbody></table>';
         } catch (Exception $e) {
-            echo json_encode(['error' => $e->getMessage()]);
+            echo '<table class="data-table"><thead><tr><th>Server response</th></tr></thead><tbody><tr><td>' . htmlspecialchars($e->getMessage()) . '</td></tr></tbody></table>';
         }
         exit;
     }
@@ -321,29 +348,10 @@
                     const intervalInput = document.getElementById('refresh-interval');
                     let timer = null;
 
-                    function renderData(data) {
-                        if (data.error) {
-                            renderTextTable('Server Error', data.error);
-                            return;
-                        }
-                        const cols = data.columns || [];
-                        const rows = data.rows || [];
-                        let html = '<table class="data-table"><thead><tr>' + cols.map(c => '<th>' + escapeHtml(c) + '</th>').join('') + '</tr></thead><tbody>';
-                        if (rows.length === 0) {
-                            html += '<tr><td colspan="' + Math.max(cols.length, 1) + '" class="empty-state">No rows found.</td></tr>';
-                        } else {
-                            for (const r of rows) {
-                                html += '<tr>' + cols.map(c => '<td>' + escapeHtml(String(r[c] ?? '')) + '</td>').join('') + '</tr>';
-                            }
-                        }
-                        html += '</tbody></table>';
-                        view.innerHTML = html;
-                    }
-
                     function renderTextTable(header, text) {
                         const escaped = escapeHtml(text.trim() || '(empty response)');
                         const html = '<table class="data-table"><thead><tr><th>' + escapeHtml(header) + '</th></tr></thead>' +
-                            '<tbody><tr><td><pre style="margin:0;white-space:pre-wrap;word-break:break-word;color:#ffb3b3;background:transparent;border:none;">' + escaped + '</pre></td></tr></tbody></table>';
+                            '<tbody><tr><td><pre style="margin:0;white-space:pre-wrap;word-break:break-word;">' + escaped + '</pre></td></tr></tbody></table>';
                         view.innerHTML = html;
                     }
 
@@ -359,18 +367,7 @@
                         try {
                             const res = await fetch('?action=fetch_table&table=' + encodeURIComponent(table));
                             const text = await res.text();
-                            let data;
-                            try {
-                                data = JSON.parse(text);
-                            } catch (err) {
-                                renderTextTable('Server response', text);
-                                return;
-                            }
-                            if (data.error) {
-                                renderTextTable('Server Error', data.error);
-                                return;
-                            }
-                            renderData(data);
+                            view.innerHTML = text;
                         } catch (e) {
                             renderTextTable('Fetch error', e.message || String(e));
                             console.error(e);
