@@ -74,6 +74,36 @@
         }
     }
 
+    // Handle change_password
+    if ($action === 'change_password') {
+        $current = $_POST['current_password'] ?? '';
+        $new = $_POST['new_password'] ?? '';
+        $confirm = $_POST['confirm_password'] ?? '';
+
+        if (empty($current) || empty($new) || empty($confirm)) {
+            $msg = 'Please fill in all password fields.';
+        } elseif ($new !== $confirm) {
+            $msg = 'New password and confirmation do not match.';
+        } else {
+            try {
+                $st = $pdo->prepare('SELECT Password FROM Admins WHERE ID = ?');
+                $st->execute([$_SESSION['admin_id']]);
+                $admin = $st->fetch(PDO::FETCH_ASSOC);
+
+                if (!$admin || !password_verify($current, $admin['Password'])) {
+                    $msg = 'Current password is incorrect.';
+                } else {
+                    $hashed_pwd = password_hash($new, PASSWORD_BCRYPT);
+                    $st = $pdo->prepare('UPDATE Admins SET Password = ? WHERE ID = ?');
+                    $st->execute([$hashed_pwd, $_SESSION['admin_id']]);
+                    $msg = 'Password changed successfully.';
+                }
+            } catch (PDOException $e) {
+                $msg = 'Error changing password: ' . $e->getMessage();
+            }
+        }
+    }
+
     // Handle delete_admin
     if ($action === 'delete_admin' && !empty($_POST['admin_id'])) {
         $aid = (int)$_POST['admin_id'];
@@ -265,9 +295,21 @@
                 <form method="post" class="card admin-form">
                     <input type="hidden" name="action" value="add_admin">
                     <label>Username: <input name="username" required></label>
+                    <label>Email: <input name="email" type="email" required></label>
                     <label>Password: <input name="password" type="password" required></label>
                     <div class="form-actions">
                         <button type="submit">Add Admin</button>
+                    </div>
+                </form>
+
+                <h4>Change Password</h4>
+                <form method="post" class="card admin-form">
+                    <input type="hidden" name="action" value="change_password">
+                    <label>Current Password: <input name="current_password" type="password" required></label>
+                    <label>New Password: <input name="new_password" type="password" required></label>
+                    <label>Confirm Password: <input name="confirm_password" type="password" required></label>
+                    <div class="form-actions">
+                        <button type="submit">Change Password</button>
                     </div>
                 </form>
 
