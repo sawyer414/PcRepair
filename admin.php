@@ -309,7 +309,7 @@
                     <label style="margin-left:10px"><input type="checkbox" id="auto-refresh"> Auto-refresh</label>
                     <label style="margin-left:10px">Interval (s): <input id="refresh-interval" type="number" value="5" min="1" style="width:60px"></label>
                     <button id="refresh-now" type="button">Refresh</button>
-                    <div id="db-view" style="margin-top:12px;overflow:auto;max-height:400px;border:1px solid #ddd;padding:8px;background:#fff"></div>
+                    <div id="db-view" class="db-view"></div>
                 </div>
 
                 <script>
@@ -322,12 +322,16 @@
                     let timer = null;
 
                     function renderData(data) {
-                        if (data.error) { view.innerHTML = '<p style="color:red">' + data.error + '</p>'; return; }
+                        if (data.error) { view.innerHTML = '<p class="db-error">' + escapeHtml(data.error) + '</p>'; return; }
                         const cols = data.columns || [];
                         const rows = data.rows || [];
-                        let html = '<table style="border-collapse:collapse;width:100%"><thead><tr>' + cols.map(c=>'<th style="border:1px solid #ccc;padding:6px;background:#f6f6f6">'+escapeHtml(c)+'</th>').join('') + '</tr></thead><tbody>';
-                        for (const r of rows) {
-                            html += '<tr>' + cols.map(c=>' <td style="border:1px solid #eee;padding:6px">'+escapeHtml(String(r[c] ?? ''))+'</td>').join('') + '</tr>';
+                        let html = '<table class="data-table"><thead><tr>' + cols.map(c => '<th>' + escapeHtml(c) + '</th>').join('') + '</tr></thead><tbody>';
+                        if (rows.length === 0) {
+                            html += '<tr><td colspan="' + cols.length + '" class="empty-state">No rows found.</td></tr>';
+                        } else {
+                            for (const r of rows) {
+                                html += '<tr>' + cols.map(c => '<td>' + escapeHtml(String(r[c] ?? '')) + '</td>').join('') + '</tr>';
+                            }
                         }
                         html += '</tbody></table>';
                         view.innerHTML = html;

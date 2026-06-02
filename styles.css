@@ -259,6 +259,54 @@ p {
   }
 }
 
+#db-view {
+  margin-top: 1rem;
+  overflow: auto;
+  max-height: 420px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 0.8rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.data-table th {
+  background: rgba(91, 192, 255, 0.15);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.data-table td {
+  color: var(--text);
+}
+
+.data-table .empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.db-error {
+  color: #ff7a7a;
+  margin: 0;
+}
+
 /* ── Hamburger button ─────────────────────────────────────────── */
 .nav-toggle {
   display: none;
