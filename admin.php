@@ -43,8 +43,8 @@
     // Handle add_admin
     if ($action === 'add_admin' && !empty($_POST['username'])) {
         $username = $_POST['username'];
-        $email = $_POST['email'];
         $password = $_POST['password'];
+        $email = $_POST['email'] ?? '';
         try {
             $hashed_pwd = password_hash($password, PASSWORD_BCRYPT);
             $st = $pdo->prepare('INSERT INTO Admins (Username, Email, Password) VALUES (?, ?, ?)');
@@ -59,15 +59,14 @@
     if ($action === 'update_admin' && !empty($_POST['admin_id'])) {
         $admin_id = (int)$_POST['admin_id'];
         $username = $_POST['username'];
-        $email = $_POST['email'];
         try {
             if (!empty($_POST['password'])) {
                 $hashed_pwd = password_hash($_POST['password'], PASSWORD_BCRYPT);
-                $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ?, Password = ? WHERE ID = ?');
-                $st->execute([$username, $email, $hashed_pwd, $admin_id]);
+                $st = $pdo->prepare('UPDATE Admins SET Username = ?, Password = ? WHERE ID = ?');
+                $st->execute([$username, $hashed_pwd, $admin_id]);
             } else {
-                $st = $pdo->prepare('UPDATE Admins SET Username = ?, Email = ? WHERE ID = ?');
-                $st->execute([$username, $email, $admin_id]);
+                $st = $pdo->prepare('UPDATE Admins SET Username = ? WHERE ID = ?');
+                $st->execute([$username, $admin_id]);
             }
             $msg = 'Admin updated successfully.';
         } catch (PDOException $e) {
@@ -201,24 +200,22 @@
                 <?php if (!empty($msg)) echo '<p class="card">' . htmlspecialchars($msg) . '</p>'; ?>
 
                 <h3>Admins</h3>
-                <table class="card">
+                <table class="card admin-table">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
-                            <th>Email</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         try {
-                            $stmt = $pdo->query("SELECT ID, Username, Email FROM Admins");
+                            $stmt = $pdo->query("SELECT ID, Username FROM Admins");
                             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                                 $id = (int)$row['ID'];
                                 $usern = htmlspecialchars($row['Username']);
-                                $email = htmlspecialchars($row['Email']);
-                                echo "<tr><td>$id</td><td>$usern</td><td>$email</td>";
+                                echo "<tr><td>$id</td><td>$usern</td>";
                                 echo "<td>";
                                 // Edit link
                                 echo "<a href=\"?edit_id=$id\">Edit</a> ";
@@ -234,7 +231,7 @@
                                 echo "</td></tr>";
                             }
                         } catch (PDOException $e) {
-                            echo "<tr><td colspan='4'>Error loading admins.</td></tr>";
+                            echo "<tr><td colspan='3'>Error loading admins.</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -244,32 +241,34 @@
                 // If editing an admin, show edit form
                 if (!empty($_GET['edit_id'])):
                     $edit_id = (int)$_GET['edit_id'];
-                    $st = $pdo->prepare('SELECT ID, Username, Email FROM Admins WHERE ID = ?');
+                    $st = $pdo->prepare('SELECT ID, Username FROM Admins WHERE ID = ?');
                     $st->execute([$edit_id]);
                     $editAdmin = $st->fetch(PDO::FETCH_ASSOC);
                     if ($editAdmin):
                 ?>
                     <h4>Edit Admin (ID <?php echo (int)$editAdmin['ID']; ?>)</h4>
-                    <form method="post" class="card">
+                    <form method="post" class="card admin-form">
                         <input type="hidden" name="action" value="update_admin">
                         <input type="hidden" name="admin_id" value="<?php echo (int)$editAdmin['ID']; ?>">
-                        <label>Username: <input name="username" value="<?php echo htmlspecialchars($editAdmin['Username']); ?>" required></label><br>
-                        <label>Email: <input name="email" type="email" value="<?php echo htmlspecialchars($editAdmin['Email']); ?>" required></label><br>
-                        <label>New Password (leave blank to keep current): <input name="password" type="password"></label><br>
-                        <button type="submit">Update Admin</button>
-                        <a href="admin.php">Cancel</a>
+                        <label>Username: <input name="username" value="<?php echo htmlspecialchars($editAdmin['Username']); ?>" required></label>
+                        <label>New Password (leave blank to keep current): <input name="password" type="password"></label>
+                        <div class="form-actions">
+                            <button type="submit">Update Admin</button>
+                            <a class="button button--ghost" href="admin.php">Cancel</a>
+                        </div>
                     </form>
                 <?php
                     endif;
                 endif;
                     ?>
                 <h4>Add Admin</h4>
-                <form method="post" class="card">
+                <form method="post" class="card admin-form">
                     <input type="hidden" name="action" value="add_admin">
-                    <label>Username: <input name="username" required></label><br>
-                    <label>Email: <input name="email" type="email" required></label><br>
-                    <label>Password: <input name="password" type="password" required></label><br>
-                    <button type="submit">Add Admin</button>
+                    <label>Username: <input name="username" required></label>
+                    <label>Password: <input name="password" type="password" required></label>
+                    <div class="form-actions">
+                        <button type="submit">Add Admin</button>
+                    </div>
                 </form>
 
                 <h3>Pages</h3>

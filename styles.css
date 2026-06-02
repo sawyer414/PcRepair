@@ -131,17 +131,133 @@ p {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1.2rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.15);
 }
 
-.actions {
+.card h4 {
+  margin-top: 0;
+}
+
+.card table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.card th,
+.card td {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card th {
+  background: rgba(91, 192, 255, 0.14);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.card tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.card a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.card a:hover {
+  text-decoration: underline;
+}
+
+.admin-table th,
+.admin-table td {
+  white-space: nowrap;
+}
+
+.admin-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.admin-form input[type="text"],
+.admin-form input[type="password"],
+.admin-form input[type="email"],
+.admin-form textarea,
+.admin-form select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.admin-form input:focus,
+.admin-form textarea:focus,
+.admin-form select:focus {
+  outline: none;
+  border-color: #5bc0ff;
+  box-shadow: 0 0 0 3px rgba(91, 192, 255, 0.12);
+}
+
+.form-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.2rem;
+  align-items: center;
+}
+
+button,
+input[type="button"],
+input[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #5bc0ff, #2ea9ff);
+  color: #04101c;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover,
+input[type="button"]:hover,
+input[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 35px rgba(45, 174, 255, 0.18);
+}
+
+.button--ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .hero__grid,
+  .grid-2,
+  .grid-3,
+  .builds-grid,
+  .topbar__inner,
+  .footer__inner {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .button {
