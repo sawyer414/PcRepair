@@ -32,16 +32,9 @@
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
 
-        // Database connection
-        $host = '54.225.154.64';
-        $db = 'PcRepair';
-        $user = 'Sawyer';
-        $pass = '/Royals2026';
+        require_once __DIR__ . '/db.php';
 
         try {
-            $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
             $stmt = $pdo->prepare("SELECT ID, Username, Email, Password FROM Admins WHERE Username = ?");
             $stmt->execute([$username]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);

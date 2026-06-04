@@ -1,11 +1,6 @@
 <?php
-// ── Database config ──────────────────────────────────────────────
-$host   = "54.225.154.64";       // your DB host
-$dbname = "PcRepair";   // your database name
-$user   = "Sawyer";   // your DB username
-$pass   = "/Royals2026";   // your DB password
-// ────────────────────────────────────────────────────────────────
- 
+require_once __DIR__ . '/db.php';
+
 $success = null;
 $error   = null;
  
@@ -20,13 +15,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = "Invalid email address.";
     } else {
         try {
-            $pdo = new PDO(
-                "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
-                $user,
-                $pass,
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-            );
- 
             $stmt = $pdo->prepare(
                 "INSERT INTO contacts (name, email, message, created_at)
                  VALUES (:name, :email, :message, NOW())"

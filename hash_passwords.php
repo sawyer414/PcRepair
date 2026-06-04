@@ -2,15 +2,9 @@
 // Script to hash existing plain text passwords in Admins table
 // Run this once, then delete the file
 
-$host = '54.225.154.64';
-$db = 'PcRepair';
-$user = 'Sawyer';
-$pass = '/Royals2026';
+require_once __DIR__ . '/db.php';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     // Get all admins
     $stmt = $pdo->query("SELECT ID, Password FROM Admins");
     $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
